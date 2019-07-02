@@ -13,10 +13,9 @@ public class Tweet {
     private boolean isTruncated;
     private GeoLocation geo;
     private boolean isFavorited;
-    private long[] contributors;
     private String categoria;
 
-    public Tweet (UUID id, String username, String text, LocalDate date, String source, boolean isTruncated, GeoLocation geo, boolean isFavorited, long[] contributors, String categoria){
+    public Tweet (UUID id, String username, String text, LocalDate date, String source, boolean isTruncated, GeoLocation geo, boolean isFavorited, String categoria){
         this.id = id;
         this.username = username;
         this.text = text;
@@ -25,7 +24,6 @@ public class Tweet {
         this.isTruncated = isTruncated;
         this.geo = geo;
         this.isFavorited = isFavorited;
-        this.contributors = contributors;
         this.categoria = categoria;
     }
 
@@ -59,10 +57,6 @@ public class Tweet {
 
     public boolean isFavorited(){
         return isFavorited;
-    }
-
-    public long[] getContributors(){
-        return contributors;
     }
 
     public String getCategoria(){

@@ -1,9 +1,11 @@
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.utils.UUIDs;
+import twitter4j.GeoLocation;
+
 import java.lang.String;
 
 public class TweetRepository {
@@ -50,11 +52,10 @@ public class TweetRepository {
                 .append("latitude float, ")
                 .append("longitude float, ")
                 .append("isFavorited boolean, ")
-                .append("contributors list<text>, ")
                 .append("categoria text, ")
-                .append("primary key (categoria));");
+                .append("primary key (categoria, id));");
 
-        System.out.println("CREATE TABLE IF NOT EXISTS id uuid, username text, text text, createdDate date, source text, isTruncated boolean, latitude float, longitude float, isFavorited boolean, contributors list<text>, categoria text, primary key (categoria));");
+        System.out.println("CREATE TABLE IF NOT EXISTS id uuid, username text, text text, createdDate date, source text, isTruncated boolean, latitude float, longitude float, isFavorited boolean, categoria text, primary key (categoria, id);");
         final String query = sb.toString();
         session.execute(query);
 
@@ -84,7 +85,7 @@ public class TweetRepository {
         System.out.println("insertTweet() - init");
 
         StringBuilder sb = new StringBuilder("INSERT INTO ")
-                .append(TABLE_NAME_BY_CATEGORIA).append("(id, username, text, createddate, source, istruncated, latitude, longitude, isfavorited, contributors, categoria) ")
+                .append(TABLE_NAME_BY_CATEGORIA).append("(id, username, text, createddate, source, istruncated, latitude, longitude, isfavorited, categoria) ")
                 .append(" VALUES (").append(tw.getId()).append(", '")
                 .append(tw.getuser()).append("', '")
                 .append(tw.gettext()).append("', '")
@@ -93,42 +94,96 @@ public class TweetRepository {
                 .append(tw.isTruncated()).append(", ")
                 .append(tw.getGeoLocation().getLatitude()).append(", ")
                 .append(tw.getGeoLocation().getLongitude()).append(", ")
-                .append(tw.isFavorited()).append(", ")
-                .append(tw.getContributors()).append(", '")
+                .append(tw.isFavorited()).append(", '")
                 .append(tw.getCategoria())
                 .append("');");
 
-        System.out.println("INSERT INTO tweetsbycategoria(id, username, text, createdDate, source, isTruncated, latitude, longitude, isFavorited, contributors, categoria) VALUES ();");
+        System.out.println("INSERT INTO tweetsbycategoria(id, username, text, createdDate, source, isTruncated, latitude, longitude, isFavorited, categoria) VALUES ();");
         final String query = sb.toString();
         session.execute(query);
 
         System.out.println("insertTweet() - end");
     }
 
+    //select all na tabela tweets ou tweetsbycategoria
     public List<Tweet> selectAll(){
         System.out.println("selectAll() - init");
 
-        StringBuilder sb = new StringBuilder("SELECT * FROM ").append(TABLE_NAME);
+        List<Tweet> tweets = new ArrayList<>();
 
-        System.out.println("SELECT * FROM tweets;");
+        StringBuilder sb = new StringBuilder("SELECT * FROM ").append(TABLE_NAME_BY_CATEGORIA);
+
+        System.out.println("SELECT * FROM tweetsbycategoria;");
         final String query = sb.toString();
         ResultSet rs = session.execute(query);
 
-        List<Tweet> tweets = new ArrayList<>();
-
-        for(Row r:rs) {
-            //Tweet tw = new Tweet(r.getUUID("id"), r.getString("username"), r.getString("text"), r.getDate("date"));
+        for (Row r : rs) {
+            Tweet tw = new Tweet(r.getUUID("id"), r.getString("username"), r.getString("text"), r.getDate("createddate"), r.getString("source"), r.getBool("isTruncated"), new GeoLocation(r.getFloat("latitude"), r.getFloat("longitude")), r.getBool("isFavorited"), r.getString("categoria"));
             System.out.println("Tweet = " + r.getUUID("id") + ", "
                     + r.getString("username") + ", "
                     + r.getString("text") + ", "
-                    + r.getDate("date"));
+                    + r.getDate("createddate") + ", "
+                    + r.getString("source") + ", "
+                    + r.getBool("isTruncated") + ", "
+                    + new GeoLocation(r.getFloat("latitude"), r.getFloat("longitude")) + ", "
+                    + r.getBool("isFavorited") + ", "
+                    + r.getString("categoria"));
 
-            //tweets.add(tw);
+            tweets.add(tw);
         }
 
         System.out.println("selectAll() - end");
 
         return tweets;
+    }
+
+    //select tweet by type
+    public List<Tweet> selectByCategoria(String categoria){
+        System.out.println("selectByCategoria() - init");
+
+        StringBuilder sb = new StringBuilder("SELECT * FROM ")
+                .append(TABLE_NAME_BY_CATEGORIA)
+                .append(" WHERE categoria = '").append(categoria)
+                .append("';");
+
+        final String query = sb.toString();
+
+        ResultSet rs = session.execute(query);
+
+        List<Tweet> tweets = new ArrayList<>();
+
+        for(Row r:rs){
+            Tweet tw = new Tweet(r.getUUID("id"), r.getString("username"), r.getString("text"), r.getDate("createddate"), r.getString("source"), r.getBool("isTruncated"), new GeoLocation(r.getFloat("latitude"), r.getFloat("longitude")), r.getBool("isFavorited"), r.getString("categoria"));
+            tweets.add(tw);
+
+            System.out.println("Tweet = " + r.getUUID("id") + ", "
+                    + r.getString("username") + ", "
+                    + r.getString("text") + ", "
+                    + r.getDate("createddate") + ", "
+                    + r.getString("source") + ", "
+                    + r.getBool("isTruncated") + ", "
+                    + new GeoLocation(r.getFloat("latitude"), r.getFloat("longitude")) + ", "
+                    + r.getBool("isFavorited") + ", "
+                    + r.getString("categoria"));
+        }
+
+        System.out.println("selectByCategoria() - end");
+
+        return tweets;
+    }
+
+    public void deleteTweetByCategoria(String categoria){
+        System.out.println("deleteTweetByCategoria() - init");
+        StringBuilder sb = new StringBuilder("DELETE FROM ")
+                .append(TABLE_NAME_BY_CATEGORIA)
+                .append(" WHERE categoria = '").append(categoria)
+                .append("';");
+
+        final String query = sb.toString();
+        System.out.println("DELETE FROM tweetsbycategoria WHERE categoria = '';");
+        session.execute(query);
+
+        System.out.println("deleteTweetByCategoria() - end");
     }
 
     public void deleteTweet(Tweet tw){
